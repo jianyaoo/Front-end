@@ -450,9 +450,162 @@ const router = new VueRouter({
 })
 ```
 
+### 路由组件传参
+
+**为什么会使用路由组件传参**
+
+一般我们获取路由中的参数会使用 `$route.params.id` 获取到我们需要的参数。但是`$route`于目前的路由行程高度耦合，使得组件只能在特定的路由下使用。
+
+**如何使用路由组件传参**
+
+使用 props 属性，将路由组件解耦。
+
+- 首先，在组件中使用 props 属性接受路由参数
+- 然后，在定义路由对象的时候设置当前路由的props属性为true
+
+```js
+const User = {
+  props: ['id'],
+  template: '<div>User {{ id }}</div>'
+}
+const router = new VueRouter({
+  routes: [
+    { path: '/user/:id', component: User, props: true },
+
+    // 对于包含命名视图的路由，你必须分别为每个命名视图添加 `props` 选项：
+    {
+      path: '/user/:id',
+      components: { default: User, sidebar: Sidebar },
+      props: { default: true, sidebar: false }
+    }
+  ]
+})
+```
+
 
 
 ## 使用进阶
+
+### 导航守卫
+
+**什么是导航守卫**
+
+导航守卫类似于导航的一个生命周期，主要从进入导航、导航跳转、取消导航等方面进行导航守卫
+
+**导航守卫的种类**
+
+- 全局前置守卫
+- 全局解析守卫
+- 全局后置守卫
+- 路由独享守卫
+- 组件内守卫
+
+**全局前置守卫**
+
+- 注册使用 - beforeEach：
+
+  ```js
+  const router = new VueRouter({...})
+  router.beforeEach( (to , from , next) => {...} )
+  ```
+
+- 参数说明
+
+  ```js
+  to:Router: // 表示将要跳转的路由对象
+  from:Router:// 表示跳转来源的路由对象
+  next：Function：// 一定要调用改方法来解析当前钩子。执行效果依赖于next的参数
+  	next();不传参数表示直接进入管道中的下一个钩子，如果所有钩子都已经执行结束，则导航的状态就是confirm的状态。
+      next( false ):传入false表示中断路由跳转，如果url的导航改变了，则会重置到 from 对应的地址。
+      next( '/' )： 进入到next指定的路由对象中，支持传入一个路由对象，允许 replace、name等等路由灯箱支持的属性.
+  ```
+
+  > 重点说明：next 函数一定要确保在任何一个导航守卫中被严格执行一次，否则钩子不会被解析或者解析报错。
+
+
+
+**全局解析守卫**
+
+- 注册使用 - beforeResolve 
+- 调用时间：在导航被确认之前，且同时在所有组件内的守卫和异步路由组件被解析之后执行
+
+
+
+**全局后置守卫**
+
+- 注册使用 - afterEach
+- 调用事件：路由导航解析之后
+- 用途：一般用于在路由解析成功后统一执行某些函数
+
+
+
+**路由独享守卫**
+
+- 注册使用 - beforeEnter
+
+- 用途：针对单独某个路由的前置守卫，使用方法和全局前置守卫一致，只是 类似于作用域不同
+
+- 使用实例：
+
+  ```js
+  const router = new VueRouter({
+    routes: [
+      {
+        path: '/foo',
+        component: Foo,
+        beforeEnter: (to, from, next) => {
+          // ...
+        }
+      }
+    ]
+  })
+  ```
+
+
+
+**组件内守卫**
+
+直接在组件内部定义的路由守卫，被称之为组件内守卫。
+
+- beforeRouteEnter
+- beforeRouteUpdate
+- beforeRouterLeave
+
+```js
+const Foo = {
+  template: `...`,
+  beforeRouteEnter (to, from, next) {
+    // 在渲染该组件的对应路由被 confirm 前调用
+    // 不！能！获取组件实例 `this`
+    // 因为当守卫执行前，组件实例还没被创建
+  },
+  beforeRouteUpdate (to, from, next) {
+    // 在当前路由改变，但是该组件被复用时调用
+    // 举例来说，对于一个带有动态参数的路径 /foo/:id，在 /foo/1 和 /foo/2 之间跳转的时候，
+    // 由于会渲染同样的 Foo 组件，因此组件实例会被复用。而这个钩子就会在这个情况下被调用。
+    // 可以访问组件实例 `this`
+  },
+  beforeRouteLeave (to, from, next) {
+    // 导航离开该组件的对应路由时调用
+    // 可以访问组件实例 `this`
+    // 一般用于在用户离开前进行进行一些提示  
+  }
+}
+```
+
+在 beforeRouteEnter 中我们无法获取到 this 实例，但是又想使用实例怎么办？在 beforeRouteEnter 钩子中支持给next 函数传递 实例作为参数，然后在next的回调函数中进行一些操作,
+
+```js
+beforeRouteEnter (to, from, next) {
+  next(vm => {
+    // 通过 `vm` 访问组件实例
+  })
+}
+```
+
+**导航解析流程**
+
+![image-20200611153558298](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200611153558298.png)
 
 ## 从 API 的角度认识vue-router
 
