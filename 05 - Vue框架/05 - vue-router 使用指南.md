@@ -607,9 +607,294 @@ beforeRouteEnter (to, from, next) {
 
 ![image-20200611153558298](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200611153558298.png)
 
+
+
+### 路由元信息
+
+**什么是路由元信息**
+
+`meta`属性，我们在定义路由的时候可以使用`mate`字段，`meta`字段接受任意值
+
+**如何访问到meta字段**
+
+- 路由记录：在routes 配置中的每一个路由对象都被称之为路由记录
+
+- $router.matched 数组：一个路由匹配到的所有路由记录都会暴露给matched数组
+
+- 访问meta字段：
+
+  ```js
+  // 如果只能匹配到一个路由：to.meta.requiresAuth;
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+      // this route requires auth, check if logged in
+      // if not, redirect to login page.
+      if (!auth.loggedIn()) {
+        next({
+          path: '/login',
+          query: { redirect: to.fullPath }
+        })
+      } else {
+        next()
+      }
+    } else {
+      next() // 确保一定要调用 next()
+    }
+  ```
+
+  
+
+### 过渡效果
+
+**如何使用过渡效果**
+
+```vue
+<transition>
+  <router-view></router-view>
+</transition>
+```
+
+**单个路由的过渡效果**
+
+- 单个路由的过渡效果：即针对每一个组件都有自己对对应的不同的过渡效果
+
+- 实现方式：在路由对应的组件上添加过渡效果，并设置不同的nama值
+
+  ```vue
+  <transition name='slider'>
+  	<div>
+          foo
+      </div>
+  </transition>
+  ```
+
+**基于路由的动态过渡效果**
+
+- 基于路由的动态过渡：针对路由的跳转不同，设置的路由效果不同
+
+- 实现方式：在组件内监听路由，根据 from 和 to 的路径进行效果判断
+
+  ```vue
+  <!-- 使用动态的 transition name -->
+  <transition :name="transitionName">
+    <router-view></router-view>
+  </transition>
+  <!-- 监听路由变化 -->
+  watch: {
+    '$route' (to, from) {
+      const toDepth = to.path.split('/').length
+      const fromDepth = from.path.split('/').length
+      this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
+    }
+  }
+  ```
+
+  
+
 ## 从 API 的角度认识vue-router
 
-## 运行实例
+### router-link支持的属性 - 9种
+
+**★01 - to**
+
+- 接受参数的类型：字符串 | 目标地址的对象
+
+- 必要性：必须
+
+- 作用：用于目标跳转，当被点击后，内部会立刻把 to 的值传递给 router.push()去执行
+
+- 使用实例（官网API）：
+
+  ```vue
+  <!-- 字符串 -->
+  <router-link to="home">Home</router-link>
+  <!-- 不写 v-bind 也可以，就像绑定别的属性一样 -->
+  <router-link :to="'home'">Home</router-link>
+  <!-- 同上 -->
+  <router-link :to="{ path: 'home' }">Home</router-link>
+  <!-- 命名的路由 -->
+  <router-link :to="{ name: 'user', params: { userId: 123 }}">User</router-link>
+  <!-- 带查询参数，下面的结果为 /register?plan=private -->
+  <router-link :to="{ path: 'register', query: { plan: 'private' }}"
+    >Register</router-link
+  >
+  ```
+
+**★02 - replace**
+
+- 参数：boolean
+
+- 必要性：非必要
+
+- 作用：路由替换，类似于to，但是使用replace时， to的值被传到的不是push()而是执行replace，导航不会留下hsitory记录。
+
+- 使用实例
+
+  ```vue
+  <router-link :to="{ path: '/abc'}" replace></router-link>
+  ```
+
+  
+
+**★03 - append**
+
+- 参数：boolean
+
+- 必要性：非必须
+
+- 作用：为当前跳转路由添加跟路径。如果当前在 /a下，to=“/b”。不使用append时，跳转的是/b，使用append 后，跳转的是 /a/b;
+
+- 使用实例：
+
+  ```vue
+  <router-link :to="{ path: 'relative/path'}" append></router-link>
+  ```
+
+  
+
+**04 - tag**
+
+- 参数：字符串
+
+- 必要性：非必须
+
+- 作用：替换导航的渲染标签。默认情况下，导航渲染为a标签，但是可以使用tag指定渲染的标签类型，且导航点击事件不变。
+
+- 使用实例：
+
+  ```vue
+  <router-link to="/foo" tag="li">foo</router-link>
+  <!-- 渲染结果 -->
+  <li>foo</li>
+  ```
+
+  
+
+**05 - active-class**
+
+- 参数：字符串
+- 作用：设置路由导航被激活时对应的class类名
+- 默认值：`router-link-active`
+- 特别说明：可以使用router的 `linkActiveClass`属性来进行全局配置。
+
+
+
+**★06 - exact**
+
+- 参数：boolean
+
+- 作用：在链接上使用精准匹配模式。“是否激活”默认类名的依据是包含匹配
+
+- 使用实例：
+
+  ```html
+  <!-- 这个链接只会在地址为 / 的时候被激活 -->
+  <router-link to="/" exact></router-link>
+  ```
+
+
+
+**07 - event**
+
+- 参数：字符串 | 字符串数组
+- 作用：用来定义触发导航的事件
+- 默认值：`click`
+
+
+
+**08 - exact-active-class**
+
+- 参数：字符串
+
+- 作用：用来设置当前路由被精准匹配的时候设置的样式
+
+- 默认值：`router-link-exact-actve`
+
+  
+
+**09 - aria-current-value**
+
+- 类型：'page' | 'step' | 'location' | 'date' | 'time'
+- 默认值：’page‘
+
+
+
+### router的构建选项
+
+**01 - routes**
+
+```ts
+interface RouteConfig = {
+  path: string,
+  component?: Component,
+  name?: string, // 命名路由
+  components?: { [name: string]: Component }, // 命名视图组件
+  redirect?: string | Location | Function,
+  props?: boolean | Object | Function,
+  alias?: string | Array<string>,
+  children?: Array<RouteConfig>, // 嵌套路由
+  beforeEnter?: (to: Route, from: Route, next: Function) => void,
+  meta?: any,
+  // 2.6.0+
+  caseSensitive?: boolean, // 匹配规则是否大小写敏感？(默认值：false)
+  pathToRegexpOptions?: Object // 编译正则的选项
+}
+```
+
+**02 - mode**
+
+- 类型：字符串
+- 默认值：hash
+- 可选值：hash | history | abstract
+
+
+
+**03 - base**
+
+- 类型：字符串
+- 默认值：’/‘
+- 作用：设置基础路径
+
+
+
+**04 - linkActiveClass**
+
+- 类型：字符串
+- 默认值：`router-link-active`
+- 作用：全局设置 `router-link` 默认的激活的class
+
+
+
+**05 - linkExactActiveClass**
+
+- 类型：字符串
+- 默认值：`router-link-exact-active`
+- 作用：全局设置 `router-link` 默认的精准激活的 class
+
+
+
+**06 - scrollBehavior**
+
+- 类型：Function
+- 作用：设置滚动行为
+
+
+
+**07 - parseQuery/ stringifyQuery**
+
+- 类型：Function
+
+- 作用：提供自定义查询字符串的解析/反解析函数
+
+  
+
+**08 - fallback**
+
+- 类型：Boolean
+- 默认值：true
+
+
+
+
 
 
 

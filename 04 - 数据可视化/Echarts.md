@@ -444,4 +444,4 @@ var option = {
 
 **说明**
 
-Geo 覆盖物的原理是 基于 Geo 地理坐标系添加散点图，但是在series的map配置中添加GeoIndex的目的是禁止map本身渲染地理坐标系，而是使用Geo组件的地理坐标，否则就会产生两个地图。
+Geo 覆盖物的原理是 基于 Geo 地理坐标系添加散点图，但是在series的map配置中添加GeoIndex的目的是禁止map本身渲染地理坐标系，而是使用Geo组件的地理坐标，
